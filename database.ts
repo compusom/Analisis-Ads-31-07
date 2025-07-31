@@ -1,5 +1,7 @@
 import { Client, User, PerformanceRecord, AllLookerData, BitacoraReport, UploadedVideo, ImportBatch, MetaApiConfig, ProcessedHashes } from './types';
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
+
 // A simulated database client for a more realistic feel.
 // In a real-world scenario, this would be a backend API client.
 // This simulation uses localStorage as its data store.
@@ -44,6 +46,12 @@ const db = {
             checkConnection();
         }
         console.log(`[DB] Executing: SELECT * FROM ${table};`);
+        if (['users','clients','performance_data'].includes(table)) {
+            const endpoint = table === 'performance_data' ? 'performance-data' : table;
+            const res = await fetch(`${API_BASE}/${endpoint}`);
+            if (!res.ok) return defaultValue;
+            return res.json();
+        }
         return simulateQuery(() => {
             try {
                 const data = localStorage.getItem(`db_${table}`);
@@ -61,6 +69,11 @@ const db = {
             checkConnection();
         }
         console.log(`[DB] Executing: UPDATE ${table} with new data...`);
+        if (['users','clients','performance_data'].includes(table)) {
+            const endpoint = table === 'performance_data' ? 'performance-data' : table;
+            await fetch(`${API_BASE}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            return;
+        }
         return simulateQuery(() => {
              try {
                 localStorage.setItem(`db_${table}`, JSON.stringify(data));
